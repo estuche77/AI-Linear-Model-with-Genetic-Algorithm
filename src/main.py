@@ -53,7 +53,13 @@ def load_data(dataset):
         data = load_iris()
         return data.data, data.target
     
-
+def selection():
+	puntuados = [ (calcularFitness(i), i) for i in population] #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (5 , [1,2,1,1,4,1,8,9,4,1])
+    puntuados = [i[1] for i in sorted(puntuados)] #Ordena los pares ordenados y se queda solo con el array de valores
+    population = puntuados
+    selected =  puntuados[(len(puntuados)-pressure):] #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
+  
+  
 def main():
     
     #data_set = load_data('CIFAR-10')
