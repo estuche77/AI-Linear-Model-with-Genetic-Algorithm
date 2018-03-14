@@ -13,6 +13,8 @@ class Classificator:
     def __init__(self, W):
         self.W = W
     
+    def hingeLoss(self):
+        #Esto es un comentario bien loquillo
 
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
