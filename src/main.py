@@ -46,7 +46,7 @@ def main():
     data = load_cifar("cifar-10-batches-py")
     
     classificator = Classificator(data)
-    
+    #Conflicto en la misma linea
     
 main()
     
