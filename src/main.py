@@ -14,7 +14,8 @@ batch_file_name = 'IRIS'
 
 normalization = 0
 generation_size = 10
-generation_count = 50
+generation_count = 1
+pressure = 3
 
 def hinge_loss(W, X, y):
     #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
@@ -61,12 +62,14 @@ def load_data(dataset):
         data = load_iris()
         return data.data, data.target
     #W poblacion
-def selection(X,y,population, pressure):
+def selection(data,labels,population):
     puntuados = [(hinge_loss(i,data,labels),i) for i in population] #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (5 , [1,2,1,1,4,1,8,9,4,1])
+    #print(puntuados)
+
     puntuados = [i[1] for i in sorted(puntuados)] #Ordena los pares ordenados y se queda solo con el array de valores
     population = puntuados
     selected =  puntuados[(len(puntuados)-pressure):] #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
-    print(selected)
+    #print(selected)
   
 def main():
     
@@ -81,6 +84,11 @@ def main():
     for i in range(0, generation_count):
         generation = np.random.rand(generation_size, data_size, class_count)
         generation *= normalization
+  
+    print("")
+    print(hinge_loss(generation[0],data,labels))
+    selection(data,labels,generation)
+    
     
     
 main()
