@@ -1,12 +1,18 @@
 '''
-Created on Mar 13, 2018
+Created on Mar 10, 2018
 
-@author: estuche
+@author: estuche & topo
 '''
 
-import _pickle as pickle
+import pickle
 import numpy as np
 import os
+
+class Classificator:
+    
+    def __init__(self, W):
+        self.W = W
+    
 
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
@@ -28,13 +34,18 @@ def load_cifar(folder):
     training_data_grayscale = np.mean(training_data_grayscale, axis=2)
     testing_data_grayscale = testing_data.reshape((10000, 3, 1024)).transpose((0, 2, 1))
     testing_data_grayscale = np.mean(testing_data_grayscale, axis=2)
+    
+    
+    
     return training_data_grayscale, training_labels, testing_data_grayscale, testing_labels, names['label_names']
 
 def main():
     
     data = load_cifar("cifar-10-batches-py")
     
+    classificator = Classificator(data)
     
     
+main()
     
     
