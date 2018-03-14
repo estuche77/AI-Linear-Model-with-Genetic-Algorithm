@@ -42,10 +42,11 @@ def load_cifar(folder):
 def main():
     
     data = load_cifar("cifar-10-batches-py")
+	print(data)
     
     classificator = Classificator(data)
     
-    
+##lalalallala
 main()
     
     
