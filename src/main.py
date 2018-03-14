@@ -1,12 +1,13 @@
 '''
 Created on Mar 10, 2018
 
-@author: estuche & topo
+@author: estuche & jocelyn
 '''
 
 import pickle
 import numpy as np
 import os
+from sklearn.datasets import load_iris
 
 class Classificator:
     
@@ -56,8 +57,18 @@ def load_cifar(folder):
 def main():
     
     data = load_cifar("cifar-10-batches-py")
-    print(data)
-  
+	print(data)
+    
+    classificator = Classificator(data)
+    #Conflicto en la misma linea
+def datosIris():
+	iris = load_iris()
+
+	# Arreglos de numpy
+	train_data = iris.data
+	train_labels = iris.target
+    
+##lalalallala
 main()
     
     
