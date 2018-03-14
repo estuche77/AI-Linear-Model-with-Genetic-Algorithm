@@ -14,7 +14,19 @@ class Classificator:
         self.W = W
     
     def hingeLoss(self):
-        #Esto es un comentario bien loquillo
+        
+def hingeLoss(W, X, y):
+    #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
+    
+    num_train = X.shape[0]
+    
+    scores = X.dot(W)
+    yi_scores = scores[np.arange(scores.shape[0]),y] 
+    margins = np.maximum(0, scores - np.matrix(yi_scores).T + 1)
+    margins[np.arange(num_train),y] = 0
+    loss = np.mean(np.sum(margins, axis=1))
+    
+    return loss
 
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
@@ -44,12 +56,8 @@ def load_cifar(folder):
 def main():
     
     data = load_cifar("cifar-10-batches-py")
-	print(data)
-    
-    classificator = Classificator(data)
-    #Conflicto en la misma linea
-    
-##lalalallala
+    print(data)
+  
 main()
     
     
