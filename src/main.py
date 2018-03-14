@@ -4,19 +4,12 @@ Created on Mar 10, 2018
 @author: estuche & jocelyn
 '''
 
+from sklearn.datasets import load_iris
 import pickle
 import numpy as np
 import os
-from sklearn.datasets import load_iris
-
-class Classificator:
-    
-    def __init__(self, W):
-        self.W = W
-    
-    def hingeLoss(self):
         
-def hingeLoss(W, X, y):
+def hinge_loss(W, X, y):
     #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
     
     num_train = X.shape[0]
@@ -50,25 +43,32 @@ def load_cifar(folder):
     testing_data_grayscale = testing_data.reshape((10000, 3, 1024)).transpose((0, 2, 1))
     testing_data_grayscale = np.mean(testing_data_grayscale, axis=2)
     
-    
-    
     return training_data_grayscale, training_labels, testing_data_grayscale, testing_labels, names['label_names']
+
+def load_data(dataset):
+    if (dataset == 'CIFAR-10'):
+        data = load_cifar("cifar-10-batches-py")
+        return data[0], data[1]
+    elif (dataset == 'IRIS'):
+        data = load_iris()
+        return data.data, data.target
+    
 
 def main():
     
-    data = load_cifar("cifar-10-batches-py")
-	print(data)
+    #data_set = load_data('CIFAR-10')
+    data_set = load_data('IRIS')
     
-    classificator = Classificator(data)
-    #Conflicto en la misma linea
-def datosIris():
-	iris = load_iris()
-
-	# Arreglos de numpy
-	train_data = iris.data
-	train_labels = iris.target
+    data = data_set[0]
+    labels = data_set[1]
     
-##lalalallala
+    data_size = data.shape[1]
+    class_count = len(labels)
+        
+    W = np.random.rand(data_size, class_count) * 255
+    
+    print(hinge_loss(W, data, labels))
+    
 main()
     
     
