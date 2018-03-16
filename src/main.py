@@ -11,7 +11,7 @@ import os
 import random
 
 #Batch files available: CIFAR-10 | IRIS
-batch_file_name = 'IRIS'
+batch_file_name = 'CIFAR-10'
 
 normalization = 0
 generation_size = 10
@@ -98,7 +98,7 @@ def mutation(population):
   
             #Es importante mirar que el nuevo valor no sea igual al viejo
             while nuevo_valor == population[i][punto]:
-               nuevo_valor = random.randint(1,255)
+                nuevo_valor = random.randint(1,9)
   
             #Se aplica la mutacion
             population[i][punto] = nuevo_valor
@@ -115,8 +115,8 @@ def main():
     data_size = data.shape[1]
     
     class_count = len(labels)
-    #print(data)
-    #print(data_size)
+    
+    print(labels)
         
     for i in range(0, generation_count):
         generation = np.random.rand(generation_size, data_size, class_count)
