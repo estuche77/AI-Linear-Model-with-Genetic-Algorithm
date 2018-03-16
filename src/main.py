@@ -10,8 +10,8 @@ import numpy as np
 import os
 import random
 
-#Batch files available: CIFAR-10 | IRIS
-batch_file_name = 'CIFAR-10'
+#Batch files available: CIFAR | IRIS
+batch_file_name = 'IRIS'
 
 normalization = 0
 generation_size = 10
@@ -34,29 +34,42 @@ def hinge_loss(W, X, y):
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
         datadict = pickle.load(f, encoding='latin1')
-    return datadict['data'].astype(np.float64), np.array(datadict['labels'])
+    return datadict['data'], np.array(datadict['labels'])
 
-def load_cifar(folder):
-    with open(os.path.join(folder, 'batches.meta'), 'rb') as f:
-        names = pickle.load(f, encoding='latin1')
-    training_data = np.empty([50000, 3072], dtype=np.float64)
+def load_cifar(folder):     
+    training_data = np.empty([50000, 3072], dtype=np.uint8)
     training_labels = np.empty([50000], dtype=np.uint8)
+    
     for i in range(1, 6):
         start = (i - 1) * 10000
         end = i * 10000
         training_data[start:end], training_labels[start:end] = \
             load_cifar_batch(os.path.join(folder, 'data_batch_%d' % i))
-    testing_data, testing_labels = load_cifar_batch(os.path.join(folder, 'test_batch'))
-    training_data_grayscale = training_data.reshape((50000, 3, 1024)).transpose((0, 2, 1))
-    training_data_grayscale = np.mean(training_data_grayscale, axis=2)
-    testing_data_grayscale = testing_data.reshape((10000, 3, 1024)).transpose((0, 2, 1))
-    testing_data_grayscale = np.mean(testing_data_grayscale, axis=2)
     
-    return training_data_grayscale, training_labels, testing_data_grayscale, testing_labels, names['label_names']
+    '''
+    ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+     We are only interested in 'airplane', 'cat', 'frog', 'horse' classes
+    '''
+    label_index = np.append(np.where(training_labels == 0)[0], \
+                            np.where(training_labels == 3)[0])
+    
+    label_index = np.append(label_index, \
+                            np.where(training_labels == 6)[0])
+    
+    label_index = np.append(label_index, \
+                            np.where(training_labels == 7)[0])
+    
+    training_data = training_data[label_index]
+    training_labels = training_labels[label_index]
+    
+    training_data_grayscale = training_data.reshape((20000, 3, 1024)).transpose((0, 2, 1))
+    training_data_grayscale = np.mean(training_data_grayscale, axis=2)
+        
+    return training_data_grayscale, training_labels
 
 def load_data(dataset):
     global normalization
-    if (dataset == 'CIFAR-10'):
+    if (dataset == 'CIFAR'):
         normalization = 255
         data = load_cifar("cifar-10-batches-py")
         return data[0], data[1]
@@ -64,7 +77,9 @@ def load_data(dataset):
         normalization = 10
         data = load_iris()
         return data.data, data.target
-    #W poblacion
+    
+
+#W poblacion
 def selection(data,labels,population):
     
     puntuados = [(hinge_loss(i,data,labels),i) for i in population] #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (5 , [1,2,1,1,4,1,8,9,4,1])
@@ -91,7 +106,7 @@ def mutation(population):
     print(len(population))
     for i in range(len(population)-pressure):
         if random.random() <= mutation_chance: #Cada individuo de la poblacion (menos los padres) tienen una probabilidad de mutar
-            punto = random.randint(0,largo-1) #Se elgie un punto al azar
+            punto = random.randint(0,largoIndividuo-1) #Se elgie un punto al azar
             nuevo_valor = random.randint(1,255) #y un nuevo valor para este punto
             #print(population[i])
             
@@ -104,17 +119,14 @@ def mutation(population):
             population[i][punto] = nuevo_valor
   
     return population
+
+
 def main():
     
-    data_set = load_data(batch_file_name)
-    
-    data = data_set[0]
-   
-    labels = data_set[1]
+    data, labels = load_data(batch_file_name)
     
     data_size = data.shape[1]
-    
-    class_count = len(labels)
+    class_count = labels.shape[0]
     
     print(labels)
         
