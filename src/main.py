@@ -18,6 +18,7 @@ normalization = 0
 generation_size = 10
 generation_count = 10
 pressure = 3
+n= 5
 largoIndividuo = 150
 mutation_chance = 0.3
 
