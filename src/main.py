@@ -11,11 +11,12 @@ import os
 import random
 
 #Batch files available: CIFAR | IRIS
-batch_file_name = 'IRIS'
-
+batch_name = 'IRIS'
 normalization = 0
+
+#Genetic algorithm parameters
 generation_size = 10
-generation_count = 1
+generation_count = 10
 pressure = 3
 largoIndividuo = 150
 mutation_chance = 0.3
@@ -36,6 +37,7 @@ def load_cifar_batch(fileName):
         datadict = pickle.load(f, encoding='latin1')
     return datadict['data'], np.array(datadict['labels'])
 
+#Load CIFAR-10 train data, chooses 4 classes and convert images to gray scale 
 def load_cifar(folder):     
     training_data = np.empty([50000, 3072], dtype=np.uint8)
     training_labels = np.empty([50000], dtype=np.uint8)
@@ -67,6 +69,7 @@ def load_cifar(folder):
         
     return training_data_grayscale, training_labels
 
+#Load data generalization for CIFAR-10 and IRIS
 def load_data(dataset):
     global normalization
     if (dataset == 'CIFAR'):
@@ -78,39 +81,62 @@ def load_data(dataset):
         data = load_iris()
         return data.data, data.target
     
-
-#W poblacion
+#data = all X values
+#labels = all Y values
+#population = a W list
 def selection(data,labels,population):
     
-    puntuados = [(hinge_loss(i,data,labels),i) for i in population] #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (5 , [1,2,1,1,4,1,8,9,4,1])
-    puntuados = [i[1] for i in sorted(puntuados)] #Ordena los pares ordenados y se queda solo con el array de valores
+    #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (loss , W)
+    puntuados = [(hinge_loss(i,data,labels),i) for i in population]
+    
+    #Ordena los pares ordenados y se queda solo con el W
+    puntuados = [i[1] for i in sorted(puntuados)]
     population = puntuados
-    selected =  puntuados[(len(puntuados)-pressure):] #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
+    
+    '''
+    Para Jocelyn
+    De Estuche xD
+    Creo que se están seleccionando al revés. Me parece que para este algoritmo
+    el fitness es bueno cuando es un numero alto, pero para nosotros el fitness 
+    es bueno cuando es bajo. Por eso me parece que no debería seleccionar los 
+    ultimos sino los primeros
+    '''
+    
+    #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
+    selected =  puntuados[(len(puntuados)-pressure):]
 
     return selected
 
 def cross(selected,population):
     for i in range(len(population)-pressure):
-        punto = random.randint(1,largoIndividuo-1) #Se elige un punto para hacer el intercambio
-        parents = random.sample(selected, 2) #Se eligen dos padres
-        #print("padre1",parents[0])
-        population[i][:punto] = parents[0][:punto] #Se mezcla el material genetico de los padres en cada nuevo individuo
+        
+        #Se elige un punto para hacer el intercambio
+        punto = random.randint(1,largoIndividuo-1)
+        
+        #Se eligen dos padres
+        parents = random.sample(selected, 2)
+        
+        #Se mezcla el material genetico de los padres en cada nuevo individuo
+        population[i][:punto] = parents[0][:punto]
         population[i][punto:] = parents[1][punto:]
-  
-    return population #El array 'population' tiene ahora una nueva poblacion 
+        
+    #El array 'population' tiene ahora una nueva poblacion
+    return population
+
 def mutation(population):
-    """
-        Se mutan los individuos al azar. Sin la mutacion de nuevos genes nunca podria
-        alcanzarse la solucion.
-    """
-    print(len(population))
+    
     for i in range(len(population)-pressure):
-        if random.random() <= mutation_chance: #Cada individuo de la poblacion (menos los padres) tienen una probabilidad de mutar
-            punto = random.randint(0,largoIndividuo-1) #Se elgie un punto al azar
-            nuevo_valor = random.randint(1,255) #y un nuevo valor para este punto
+        
+        #Cada individuo de la poblacion (menos los padres) tienen una probabilidad de mutar
+        if random.random() <= mutation_chance:
+            
+            #Se elgie un punto al azar
+            punto = random.randint(0,largoIndividuo-1)
+            
+            #y un nuevo valor para este punto
+            nuevo_valor = random.randint(1,255)
             #print(population[i])
             
-  
             #Es importante mirar que el nuevo valor no sea igual al viejo
             while nuevo_valor == population[i][punto]:
                 nuevo_valor = random.randint(1,9)
@@ -123,29 +149,28 @@ def mutation(population):
 
 def main():
     
-    data, labels = load_data(batch_file_name)
+    data, labels = load_data(batch_name)
     
-    data_size = data.shape[1]
-    class_count = labels.shape[0]
-    
-    print(labels)
+    data_dimension = data.shape[1]
+    class_count = np.unique(labels).shape[0]
         
-    for i in range(0, generation_count):
-        generation = np.random.rand(generation_size, data_size, class_count)
-        generation *= normalization
-        #print(generation)
-  
-    #print("")
-    #print(len(generation))
-    #print(len(generation[0]))
-    #print(len(generation[0][0]))
-    #print(data_size)
+    #Because of the bias trick we should add 1 at the end of data
+    data = np.insert(data, data.shape[1], 1, axis = 1)
     
-    selec = selection(data,labels,generation)
-    nuevapop=cross(selec,generation)
-    #print(mutation(nuevapop))
+    #Because of the bias trick we should create a W+b dimension
+    generation = np.random.rand(generation_size, data_dimension + 1, class_count)
+    generation *= normalization
+    print(generation)
     
+    selected = selection(data, labels, generation)
+    print(selected)
     
+    crossed = cross(selected, data)
+    print(crossed)
+    
+    generation = mutation(crossed)
+    print(generation)
+        
     
 main()
     
