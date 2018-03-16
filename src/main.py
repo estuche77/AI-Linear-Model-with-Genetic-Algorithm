@@ -15,11 +15,10 @@ batch_name = 'IRIS'
 normalization = 0
 
 #Genetic algorithm parameters
-generation_size = 10
+generation_size = 20
 generation_count = 10
 pressure = 3
-n= 5
-largoIndividuo = 150
+largoIndividuo = 5
 mutation_chance = 0.3
 
 def hinge_loss(W, X, y):
@@ -93,31 +92,21 @@ def selection(data,labels,population):
     #Ordena los pares ordenados y se queda solo con el W
     puntuados = [i[1] for i in sorted(puntuados)]
     population = puntuados
-    
-    '''
-    Para Jocelyn
-    De Estuche xD
-    Creo que se están seleccionando al revés. Me parece que para este algoritmo
-    el fitness es bueno cuando es un numero alto, pero para nosotros el fitness 
-    es bueno cuando es bajo. Por eso me parece que no debería seleccionar los 
-    ultimos sino los primeros
-    '''
-    
+       
     #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
-    selected =  puntuados[(len(puntuados)-pressure):]
+    selected =  puntuados[:pressure]
 
     return selected
 
 def cross(selected,population):
     for i in range(len(population)-pressure):
         
-        #Se elige un punto para hacer el intercambio
+       
         punto = random.randint(1,largoIndividuo-1)
         
         #Se eligen dos padres
         parents = random.sample(selected, 2)
-        
-        #Se mezcla el material genetico de los padres en cada nuevo individuo
+       
         population[i][:punto] = parents[0][:punto]
         population[i][punto:] = parents[1][punto:]
         
@@ -154,23 +143,22 @@ def main():
     
     data_dimension = data.shape[1]
     class_count = np.unique(labels).shape[0]
-        
-    #Because of the bias trick we should add 1 at the end of data
+    
     data = np.insert(data, data.shape[1], 1, axis = 1)
     
-    #Because of the bias trick we should create a W+b dimension
     generation = np.random.rand(generation_size, data_dimension + 1, class_count)
     generation *= normalization
-    print(generation)
+    #print(generation)
     
     selected = selection(data, labels, generation)
-    print(selected)
+       
     
-    crossed = cross(selected, data)
+    crossed = cross(selected, generation)
+    print("cross")
     print(crossed)
     
-    generation = mutation(crossed)
-    print(generation)
+    #generation = mutation(crossed)
+    #print(generation)
         
     
 main()
