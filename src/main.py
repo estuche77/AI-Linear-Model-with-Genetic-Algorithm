@@ -17,7 +17,7 @@ normalization = 0
 generation_size = 10
 generation_count = 1
 pressure = 3
-largo = 10
+largoIndividuo = 150
 mutation_chance = 0.3
 
 def hinge_loss(W, X, y):
@@ -76,9 +76,9 @@ def selection(data,labels,population):
 
 def cross(selected,population):
     for i in range(len(population)-pressure):
-        punto = random.randint(1,largo-1) #Se elige un punto para hacer el intercambio
+        punto = random.randint(1,largoIndividuo-1) #Se elige un punto para hacer el intercambio
         parents = random.sample(selected, 2) #Se eligen dos padres
-          
+        #print("padre1",parents[0])
         population[i][:punto] = parents[0][:punto] #Se mezcla el material genetico de los padres en cada nuevo individuo
         population[i][punto:] = parents[1][punto:]
   
@@ -88,14 +88,17 @@ def mutation(population):
         Se mutan los individuos al azar. Sin la mutacion de nuevos genes nunca podria
         alcanzarse la solucion.
     """
+    print(len(population))
     for i in range(len(population)-pressure):
         if random.random() <= mutation_chance: #Cada individuo de la poblacion (menos los padres) tienen una probabilidad de mutar
             punto = random.randint(0,largo-1) #Se elgie un punto al azar
-            nuevo_valor = random.randint(1,9) #y un nuevo valor para este punto
+            nuevo_valor = random.randint(1,255) #y un nuevo valor para este punto
+            #print(population[i])
+            
   
             #Es importante mirar que el nuevo valor no sea igual al viejo
             while nuevo_valor == population[i][punto]:
-               nuevo_valor = random.randint(1,9)
+               nuevo_valor = random.randint(1,255)
   
             #Se aplica la mutacion
             population[i][punto] = nuevo_valor
@@ -106,20 +109,29 @@ def main():
     data_set = load_data(batch_file_name)
     
     data = data_set[0]
+   
     labels = data_set[1]
     
     data_size = data.shape[1]
+    
     class_count = len(labels)
+    #print(data)
+    #print(data_size)
         
     for i in range(0, generation_count):
         generation = np.random.rand(generation_size, data_size, class_count)
         generation *= normalization
+        #print(generation)
   
-    print("")
+    #print("")
+    #print(len(generation))
+    #print(len(generation[0]))
     #print(len(generation[0][0]))
+    #print(data_size)
+    
     selec = selection(data,labels,generation)
     nuevapop=cross(selec,generation)
-    print(mutation(nuevapop))
+    #print(mutation(nuevapop))
     
     
     
