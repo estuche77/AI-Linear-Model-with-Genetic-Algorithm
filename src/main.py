@@ -113,7 +113,7 @@ def cross(selected,population):
     #El array 'population' tiene ahora una nueva poblacion
     return population
 
-def mutation(population):
+def mutation(population,class_count):
     
     for i in range(len(population)-pressure):
         
@@ -124,12 +124,11 @@ def mutation(population):
             punto = random.randint(0,largoIndividuo-1)
             
             #y un nuevo valor para este punto
-            nuevo_valor = random.randint(1,255)
-            #print(population[i])
-            
-            #Es importante mirar que el nuevo valor no sea igual al viejo
-            while nuevo_valor == population[i][punto]:
-                nuevo_valor = random.randint(1,9)
+            nuevo_valor = np.random.rand(class_count)
+                        
+            #Es importante mirar que el nuevo valor no sea igual al viejo           
+            while np.array_equal(nuevo_valor, population [i][punto])==True:
+                np.random.rand(class_count)
   
             #Se aplica la mutacion
             population[i][punto] = nuevo_valor
@@ -148,17 +147,11 @@ def main():
     
     generation = np.random.rand(generation_size, data_dimension + 1, class_count)
     generation *= normalization
-    #print(generation)
-    
+        
     selected = selection(data, labels, generation)
-       
-    
     crossed = cross(selected, generation)
-    print("cross")
-    print(crossed)
-    
-    #generation = mutation(crossed)
-    #print(generation)
+    mutated = mutation(crossed,class_count)
+    print(mutated)
         
     
 main()
