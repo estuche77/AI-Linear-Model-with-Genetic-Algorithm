@@ -5,6 +5,7 @@ Created on Mar 10, 2018
 '''
 
 from sklearn.datasets import load_iris
+import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 import os
@@ -16,21 +17,27 @@ normalization = 0
 
 #Genetic algorithm parameters
 generation_size = 20
-generation_count = 10
+generation_count = 50
 pressure = 3
 largoIndividuo = 5
 mutation_chance = 0.3
 
-def hinge_loss(W, X, y):
+def hinge_loss_and_accuracy(W, X, y):
     #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
     num_train = X.shape[0]
     scores = X.dot(W)
     yi_scores = scores[np.arange(scores.shape[0]),y] 
     margins = np.maximum(0, scores - np.matrix(yi_scores).T + 1)
+    
     margins[np.arange(num_train),y] = 0
     loss = np.mean(np.sum(margins, axis=1))
     
-    return loss
+    predicted_classes = np.argmax(margins, axis = 1).T - y
+    
+    correct_count = np.count_nonzero(predicted_classes == 0)
+    accuracy = correct_count / num_train
+    
+    return loss, accuracy
 
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
@@ -80,17 +87,23 @@ def load_data(dataset):
         normalization = 10
         data = load_iris()
         return data.data, data.target
+
+def evaluation(data,labels,population):
+    
+    #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (loss , W)
+    evaluaton = [hinge_loss_and_accuracy(i,data,labels) + (i,) for i in population]
+    return evaluaton
     
 #data = all X values
 #labels = all Y values
 #population = a W list
-def selection(data,labels,population):
+def selection(population):
     
     #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (loss , W)
-    puntuados = [(hinge_loss(i,data,labels),i) for i in population]
+    #puntuados = [(hinge_loss_and_accuracy(i,data,labels),i) for i in population]
     
     #Ordena los pares ordenados y se queda solo con el W
-    puntuados = [i[1] for i in sorted(puntuados)]
+    puntuados = [i[2] for i in sorted(population, key=lambda tup: tup[0])]
     population = puntuados
        
     #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
@@ -138,21 +151,71 @@ def mutation(population,class_count):
 
 def main():
     
+    #The data is loaded
     data, labels = load_data(batch_name)
     
+    #The plot variables are created
+    generation_iteration = []
+    best_loss = []
+    best_accuracy = []
+    
+    #The class count and the data dimension is obtained
     data_dimension = data.shape[1]
     class_count = np.unique(labels).shape[0]
     
+    #This is done because the bias trick
     data = np.insert(data, data.shape[1], 1, axis = 1)
     
+    #The first generation is created
     generation = np.random.rand(generation_size, data_dimension + 1, class_count)
     generation *= normalization
+    
+    for i in range(generation_count):
+        #The iteration is listed
+        generation_iteration.append(i)
         
-    selected = selection(data, labels, generation)
-    crossed = cross(selected, generation)
-    mutated = mutation(crossed,class_count)
-    print(mutated)
+        #The generation is evaluated
+        evaluated = evaluation(data, labels, generation)
         
+        '''
+        Las siguientes dos instrucciones hay que corregirlas 
+        para buscar el mejor de la generacion
+        '''
+        #Here the best evaluated individual should be inserted
+        best_loss.append(evaluated[0][0])
+        
+        best_accuracy.append(evaluated[0][1])
+        
+        #Now we select individuals for the following breed
+        selected = selection(evaluated)
+        
+        #The chosen individuals are crossed
+        crossed = cross(selected, generation)
+        
+        #The crossed individuals are mutated
+        mutated = mutation(crossed,class_count)
+        
+        #The result is now a new generation for the following iteration
+        generation = mutated
+    
+    #The plot shows the population behavior        
+    fig, ax1 = plt.subplots()
+    
+    color = 'tab:blue'
+    ax1.set_xlabel('Generation')
+    ax1.set_ylabel('Loss', color=color)
+    ax1.plot(generation_iteration, best_loss, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    
+    ax2 = ax1.twinx()
+    
+    color = 'tab:red'
+    ax2.set_ylabel('Accuracy', color=color)
+    ax2.plot(generation_iteration, best_accuracy, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    fig.tight_layout()
+    plt.show()
     
 main()
     
