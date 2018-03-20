@@ -12,7 +12,7 @@ import os
 import random
 
 #Batch files available: CIFAR | IRIS
-batch_name = 'IRIS'
+batch_name = 'CIFAR'
 normalization = 0
 
 #Genetic algorithm parameters
@@ -22,23 +22,6 @@ pressure = 3
 largoIndividuo = 5
 mutation_chance = 0.3
 
-def hinge_loss_and_accuracy(W, X, y):
-    #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
-    num_train = X.shape[0]
-    scores = X.dot(W)
-    yi_scores = scores[np.arange(scores.shape[0]),y] 
-    margins = np.maximum(0, scores - np.matrix(yi_scores).T + 1)
-    
-    margins[np.arange(num_train),y] = 0
-    loss = np.mean(np.sum(margins, axis=1))
-    
-    predicted_classes = np.argmax(margins, axis = 1).T - y
-    
-    correct_count = np.count_nonzero(predicted_classes == 0)
-    accuracy = correct_count / num_train
-    
-    return loss, accuracy
-
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
         datadict = pickle.load(f, encoding='latin1')
@@ -46,7 +29,7 @@ def load_cifar_batch(fileName):
 
 #Load CIFAR-10 train data, chooses 4 classes and convert images to gray scale 
 def load_cifar(folder):     
-    training_data = np.empty([50000, 3072], dtype=np.uint8)
+    training_data = np.empty([50000, 3072], dtype=np.float64)
     training_labels = np.empty([50000], dtype=np.uint8)
     
     for i in range(1, 6):
@@ -57,16 +40,16 @@ def load_cifar(folder):
     
     '''
     ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-     We are only interested in 'airplane', 'cat', 'frog', 'horse' classes
+     We are only interested in the first 4 classes
     '''
     label_index = np.append(np.where(training_labels == 0)[0], \
+                            np.where(training_labels == 1)[0])
+    
+    label_index = np.append(label_index, \
+                            np.where(training_labels == 2)[0])
+    
+    label_index = np.append(label_index, \
                             np.where(training_labels == 3)[0])
-    
-    label_index = np.append(label_index, \
-                            np.where(training_labels == 6)[0])
-    
-    label_index = np.append(label_index, \
-                            np.where(training_labels == 7)[0])
     
     training_data = training_data[label_index]
     training_labels = training_labels[label_index]
@@ -88,9 +71,31 @@ def load_data(dataset):
         data = load_iris()
         return data.data, data.target
 
+def hinge_loss_and_accuracy(W, X, y):
+    #Based on https://mlxai.github.io/2017/01/06/vectorized-implementation-of-svm-loss-and-gradient-update.html
+    num_train = X.shape[0]
+    scores = X.dot(W)
+    yi_scores = scores[np.arange(scores.shape[0]),y] 
+    margins = np.maximum(0, scores - np.matrix(yi_scores).T + 1)
+    
+    #Here the accuracy is calculated based on hinge loss margins
+    predicted_classes = np.argmax(margins, axis = 1).T - y
+    correct_count = np.count_nonzero(predicted_classes == 0)
+    accuracy = correct_count / num_train
+    
+    #The loss is calculated after because is necessary to mute the correct class
+    #by changing the value by 0 and then mean the vector for each data
+    
+    #The correct classes are ignored
+    margins[np.arange(num_train),y] = 0
+    loss = np.mean(np.sum(margins, axis=1))
+    
+    return loss, accuracy
+
 def evaluation(data,labels,population):
     
-    #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (loss , W)
+    #Calculate fitness value for every individual of the
+    #population and returns as a list of (loss, accuracy, W)
     evaluaton = [hinge_loss_and_accuracy(i,data,labels) + (i,) for i in population]
     return evaluaton
     
@@ -98,13 +103,10 @@ def evaluation(data,labels,population):
 #labels = all Y values
 #population = a W list
 def selection(population):
-    
-    #Calcula el fitness de cada individuo, y lo guarda en pares ordenados de la forma (loss , W)
-    #puntuados = [(hinge_loss_and_accuracy(i,data,labels),i) for i in population]
-    
+        
     #Ordena los pares ordenados y se queda solo con el W
     puntuados = [i[2] for i in sorted(population, key=lambda tup: tup[0])]
-    population = puntuados
+    #population = puntuados
        
     #Esta linea selecciona los 'n' individuos del final, donde n viene dado por 'pressure'
     selected =  puntuados[:pressure]
@@ -114,7 +116,6 @@ def selection(population):
 def cross(selected,population):
     for i in range(len(population)-pressure):
         
-       
         punto = random.randint(1,largoIndividuo-1)
         
         #Se eligen dos padres
@@ -166,11 +167,14 @@ def main():
     #This is done because the bias trick
     data = np.insert(data, data.shape[1], 1, axis = 1)
     
-    #The first generation is created
+    #The first generation is created (data_dimension + 1 because the bias trick)
     generation = np.random.rand(generation_size, data_dimension + 1, class_count)
     generation *= normalization
     
     for i in range(generation_count):
+        
+        print("Generation: " + str(i))
+        
         #The iteration is listed
         generation_iteration.append(i)
         
@@ -182,11 +186,15 @@ def main():
         para buscar el mejor de la generacion
         '''
         #Here the best evaluated individual should be inserted
-        best_loss.append(evaluated[0][0])
-        
+        #Reverse = True since we want a high accuracy
+        sorted(evaluated, key=lambda tup: tup[1], reverse=True)
         best_accuracy.append(evaluated[0][1])
         
-        #Now we select individuals for the following breed
+        #No reverse since we want a low loss
+        sorted(evaluated, key=lambda tup: tup[0])
+        best_loss.append(evaluated[0][0])
+        
+        #Now we select individuals to use in the following breed
         selected = selection(evaluated)
         
         #The chosen individuals are crossed
@@ -195,14 +203,14 @@ def main():
         #The crossed individuals are mutated
         mutated = mutation(crossed,class_count)
         
-        #The result is now a new generation for the following iteration
+        #The result is now the new generation for the following iteration
         generation = mutated
     
     #The plot shows the population behavior        
     fig, ax1 = plt.subplots()
     
     color = 'tab:blue'
-    ax1.set_xlabel('Generation')
+    ax1.set_xlabel('Generations')
     ax1.set_ylabel('Loss', color=color)
     ax1.plot(generation_iteration, best_loss, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
