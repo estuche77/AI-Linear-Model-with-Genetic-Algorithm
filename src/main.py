@@ -201,6 +201,10 @@ def simulation():
         sorted(evaluated, key=lambda tup: tup[0])
         best_loss.append(evaluated[0][0])
         
+        #This line of code visualizes every photo that contains W
+        #The bias trick should be removed from the W in order to reshape it to 32x32
+        #[visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
+        
         #Now we select individuals to use in the following breed
         selected = selection(evaluated)
         
@@ -213,10 +217,27 @@ def simulation():
         #The result is now the new generation for the following iteration
         generation = mutated
         
-    print(generation_iteration)
+    #This line of code visualizes every photo that contains W
+    #The bias trick should be removed from the W in order to reshape it to 32x32
+    [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
+        
     log(generation_iteration.__str__())
     log(best_loss.__str__())
     log(best_accuracy.__str__())
+
+def visualize_image(W,loss,title,i):
+    #Based on: https://www.quora.com/How-can-l-visualize-cifar-10-data-RGB-using-python-matplotlib
+    element = W[:,i]
+    img = element.reshape(32,32)
+    plt.imshow(img, cmap='gray')
+    plt.title("W " + str(i) + "th with loss of " + str(loss))
+    
+    #Uncomment this to show the image
+    #plt.show()
+    directory = os.path.abspath("output/" + title)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    plt.savefig(directory+"/img"+str(i))
 
 def main():
     
@@ -275,5 +296,5 @@ def main():
     plt.show()
     '''
     
-main()
+simulation()
     
