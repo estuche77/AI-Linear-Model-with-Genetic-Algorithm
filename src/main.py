@@ -19,6 +19,7 @@ normalization = 0
 generation_size = 20
 generation_count = 50
 pressure = 3
+mutation_rate = 0.1
 largoIndividuo = 5
 mutation_chance = 0.3
 
@@ -149,6 +150,40 @@ def mutation(population,class_count):
   
     return population
 
+def creativeGA(population):
+    
+    sorted_population = np.array([i[2] for i in sorted(population, key=lambda tup: tup[0])])
+    sorted_loss = np.array([i[0] for i in sorted(population, key=lambda tup: tup[0])])
+    
+    data_dimension = sorted_population.shape[1]
+    class_count = sorted_population.shape[2] 
+    
+    new_population = []
+    
+    #This represent the elitism
+    new_population.append(sorted_population[0])
+    
+    for i in range(1, sorted_population.shape[0]):
+        totalLoss = sorted_loss[i] + sorted_loss[i-1]
+        alpha = sorted_loss[i] / totalLoss
+        new_individual = sorted_population[i] * alpha + sorted_population[i-1] * (1 - alpha)
+        
+        #Random indexes and values are generted
+        random_index = np.random.randint(data_dimension, size=int(round(mutation_rate*data_dimension)))
+        random_values = np.random.rand(int(round(mutation_rate*data_dimension))) * normalization
+        
+        #This code flatten the individual in order to chance randomly its values
+        new_individual = new_individual.reshape(new_individual.shape[0] * new_individual.shape[1])
+        new_individual[random_index] = random_values
+        new_individual = new_individual.reshape(data_dimension, class_count)
+        
+        new_population.append(new_individual)
+    
+    
+    
+    return new_population
+        
+
 #This function will save to disk
 def log(string):
     with open("test.txt", "a") as myfile:
@@ -156,7 +191,54 @@ def log(string):
     
     print(string)
 
+def simulationTEST():
+    #The data is loaded
+    data, labels = load_data(batch_name)
+    
+    #The plot variables are created
+    generation_iteration = []
+    best_loss = []
+    best_accuracy = []
+    
+    #The class count and the data dimension is obtained
+    data_dimension = data.shape[1]
+    class_count = np.unique(labels).shape[0]
+    
+    #This is done because the bias trick
+    data = np.insert(data, data.shape[1], 1, axis = 1)
+    
+    #The first generation is created (data_dimension + 1 because the bias trick)
+    generation = np.random.rand(generation_size, data_dimension + 1, class_count)
+    generation *= normalization
+    
+    for i in range(1, generation_count + 1):
+        
+        print("Generation: " + str(i))
+        
+        #The iteration is listed
+        generation_iteration.append(i)
+        
+        #The generation is evaluated
+        evaluated = evaluation(data, labels, generation)
+        
+        #Here the best evaluated individual should be inserted
+        #Reverse = True since we want the highest accuracy
+        sorted(evaluated, key=lambda tup: tup[1], reverse=True)
+        best_accuracy.append(evaluated[0][1])
+        
+        #No reverse since we want the lowest loss
+        sorted(evaluated, key=lambda tup: tup[0])
+        best_loss.append(evaluated[0][0])
+        
+        generation = creativeGA(evaluated)
 
+        
+    #This line of code visualizes every photo that contains W
+    #The bias trick should be removed from the W in order to reshape it to 32x32
+    [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
+    
+    return 0
+    
 def simulation():
     
     #The data is loaded
@@ -296,5 +378,5 @@ def main():
     plt.show()
     '''
     
-simulation()
-    
+simulationTEST()
+
