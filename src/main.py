@@ -116,7 +116,7 @@ def selection(population):
 def cross(selected,population):
     for i in range(len(population)-pressure):
         
-        punto = random.randint(1,largoIndividuo-1)
+        punto = random.randint(1,population.shape[1]-1)
         
         #Se eligen dos padres
         parents = random.sample(selected, 2)
@@ -135,7 +135,7 @@ def mutation(population,class_count):
         if random.random() <= mutation_chance:
             
             #Se elgie un punto al azar
-            punto = random.randint(0,largoIndividuo-1)
+            punto = random.randint(0,population.shape[1]-1)
             
             #y un nuevo valor para este punto
             nuevo_valor = np.random.rand(class_count)
@@ -149,8 +149,15 @@ def mutation(population,class_count):
   
     return population
 
+#This function will save to disk
+def log(string):
+    with open("test.txt", "a") as myfile:
+        myfile.write(string + "\n")
+    
+    print(string)
 
-def main():
+
+def simulation():
     
     #The data is loaded
     data, labels = load_data(batch_name)
@@ -171,7 +178,7 @@ def main():
     generation = np.random.rand(generation_size, data_dimension + 1, class_count)
     generation *= normalization
     
-    for i in range(generation_count):
+    for i in range(1, generation_count + 1):
         
         print("Generation: " + str(i))
         
@@ -186,11 +193,11 @@ def main():
         para buscar el mejor de la generacion
         '''
         #Here the best evaluated individual should be inserted
-        #Reverse = True since we want a high accuracy
+        #Reverse = True since we want the highest accuracy
         sorted(evaluated, key=lambda tup: tup[1], reverse=True)
         best_accuracy.append(evaluated[0][1])
         
-        #No reverse since we want a low loss
+        #No reverse since we want the lowest loss
         sorted(evaluated, key=lambda tup: tup[0])
         best_loss.append(evaluated[0][0])
         
@@ -205,7 +212,49 @@ def main():
         
         #The result is now the new generation for the following iteration
         generation = mutated
+        
+    print(generation_iteration)
+    log(generation_iteration.__str__())
+    log(best_loss.__str__())
+    log(best_accuracy.__str__())
+
+def main():
     
+    global generation_size
+    global generation_count
+    global pressure
+    global largoIndividuo
+    global mutation_chance
+    
+    generation_size = 20
+    generation_count = 50
+    pressure = 3
+    largoIndividuo = 5
+    mutation_chance = 0.3
+    
+    
+    for i in range(10, 1025, 25):
+        generation_size = i
+        log("Generation size: " + str(i))
+        
+        for j in range(50, 100, 10):
+            generation_count = j
+            log("Generation count: " + str(j))
+            
+            for x in range(4, i//2, 7):
+                pressure = x
+                log("Pressure: " + str(x))
+                
+                for y in range(2, 5, 1):
+                    mutation_chance = y/10
+                    log("Mutation chance: " + str(y))
+                    
+                    for z in range(0, 30, 1):
+                        log("time n: " + str(z))
+                        simulation()
+                
+    
+    '''
     #The plot shows the population behavior        
     fig, ax1 = plt.subplots()
     
@@ -224,6 +273,7 @@ def main():
     
     fig.tight_layout()
     plt.show()
+    '''
     
 main()
     
