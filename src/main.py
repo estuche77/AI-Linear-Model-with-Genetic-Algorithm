@@ -12,7 +12,7 @@ import os
 import random
 
 #Batch files available: CIFAR | IRIS
-batch_name = 'IRIS'
+batch_name = 'CIFAR'
 normalization = 0
 
 #Genetic algorithm parameters
@@ -81,7 +81,7 @@ def hinge_loss_and_accuracy(W, X, y):
     margins = np.maximum(0, scores - np.matrix(yi_scores).T + 1)
     
     #Here the accuracy is calculated based on hinge loss margins
-    predicted_classes = np.argmax(margins, axis = 1).T - y
+    predicted_classes = np.argmax(scores, axis = 1).T - y
     correct_count = np.count_nonzero(predicted_classes == 0)
     accuracy = correct_count / num_train
     
@@ -377,53 +377,13 @@ def main():
     global mutation_rate
     global mutation_chance
     
-    generation_size = 20
+    generation_size = 2048
     generation_count = 50
     pressure = 3
-    mutation_rate = 0.1
+    mutation_rate = 0.3
     mutation_chance = 0.3
     
-    
-    for i in range(10, 1025, 25):
-        generation_size = i
-        log("Generation size: " + str(i))
-        
-        for j in range(50, 100, 10):
-            generation_count = j
-            log("Generation count: " + str(j))
-            
-            for x in range(4, i//2, 7):
-                pressure = x
-                log("Pressure: " + str(x))
-                
-                for y in range(2, 5, 1):
-                    mutation_chance = y/10
-                    log("Mutation chance: " + str(y))
-                    
-                    for z in range(0, 30, 1):
-                        log("time n: " + str(z))
-                        simulation()
-
-    '''
-    #The plot shows the population behavior        
-    fig, ax1 = plt.subplots()
-    
-    color = 'tab:blue'
-    ax1.set_xlabel('Generations')
-    ax1.set_ylabel('Loss', color=color)
-    ax1.plot(generation_iteration, best_loss, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-    
-    ax2 = ax1.twinx()
-    
-    color = 'tab:red'
-    ax2.set_ylabel('Accuracy', color=color)
-    ax2.plot(generation_iteration, best_accuracy, color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
-    
-    fig.tight_layout()
-    plt.show()
-    '''
+    simulation_2()
 
 #main()
 #simulation()
