@@ -1,0 +1,6 @@
+End of execution
+Last accuracy: 0.31333333333333335
+Last loss: 2.6784026366635243
+Generation count: 50
+Generation size: 20
+Mutation rate: 0.1

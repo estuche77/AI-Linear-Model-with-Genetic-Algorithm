@@ -1,7 +1,7 @@
 '''
 Created on Mar 10, 2018
 
-@author: estuche & jocelyn
+@author: jason & jocelyn
 '''
 
 from sklearn.datasets import load_iris
@@ -12,7 +12,7 @@ import os
 import random
 
 #Batch files available: CIFAR | IRIS
-batch_name = 'CIFAR'
+batch_name = 'IRIS'
 normalization = 0
 
 #Genetic algorithm parameters
@@ -20,9 +20,9 @@ generation_size = 20
 generation_count = 50
 pressure = 3
 mutation_rate = 0.1
-largoIndividuo = 5
 mutation_chance = 0.3
 
+#This loads a single CIFAR file
 def load_cifar_batch(fileName):
     with open(fileName, 'rb') as f:
         datadict = pickle.load(f, encoding='latin1')
@@ -41,8 +41,9 @@ def load_cifar(folder):
     
     '''
     ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-     We are only interested in the first 4 classes
+     We are taking only the first 4 classes
     '''
+    
     label_index = np.append(np.where(training_labels == 0)[0], \
                             np.where(training_labels == 1)[0])
     
@@ -60,7 +61,7 @@ def load_cifar(folder):
         
     return training_data_grayscale, training_labels
 
-#Load data generalization for CIFAR-10 and IRIS
+#Load data from CIFAR-10 or IRIS datasets
 def load_data(dataset):
     global normalization
     if (dataset == 'CIFAR'):
@@ -94,7 +95,6 @@ def hinge_loss_and_accuracy(W, X, y):
     return loss, accuracy
 
 def evaluation(data,labels,population):
-    
     #Calculate fitness value for every individual of the
     #population and returns as a list of (loss, accuracy, W)
     evaluaton = [hinge_loss_and_accuracy(i,data,labels) + (i,) for i in population]
@@ -150,11 +150,14 @@ def mutation(population,class_count):
   
     return population
 
-def creativeGA(population):
+#This function does a selection, crossover and mutation from a generation's population
+def creative_ga(population):
     
+    #Here the population are sorted
     sorted_population = np.array([i[2] for i in sorted(population, key=lambda tup: tup[0])])
     sorted_loss = np.array([i[0] for i in sorted(population, key=lambda tup: tup[0])])
     
+    #This data is obtained
     data_dimension = sorted_population.shape[1]
     class_count = sorted_population.shape[2] 
     
@@ -164,11 +167,13 @@ def creativeGA(population):
     new_population.append(sorted_population[0])
     
     for i in range(1, sorted_population.shape[0]):
+        
+        #An alpha coefficient is calculated
         totalLoss = sorted_loss[i] + sorted_loss[i-1]
         alpha = sorted_loss[i] / totalLoss
         new_individual = sorted_population[i] * alpha + sorted_population[i-1] * (1 - alpha)
         
-        #Random indexes and values are generted
+        #Random indexes and values are generated
         random_index = np.random.randint(data_dimension, size=int(round(mutation_rate*data_dimension)))
         random_values = np.random.rand(int(round(mutation_rate*data_dimension))) * normalization
         
@@ -177,21 +182,36 @@ def creativeGA(population):
         new_individual[random_index] = random_values
         new_individual = new_individual.reshape(data_dimension, class_count)
         
+        #The new individual is added
         new_population.append(new_individual)
     
-    
-    
     return new_population
-        
 
-#This function will save to disk
-def log(string):
-    with open("test.txt", "a") as myfile:
+#This function will save a log to a file
+def log(file, string):
+    with open(file, "a") as myfile:
         myfile.write(string + "\n")
     
     print(string)
 
-def simulationTEST():
+#Visualize an W with a title, loss and ith generation count 
+def visualize_image(W,loss,title,i):
+    #Based on: https://www.quora.com/How-can-l-visualize-cifar-10-data-RGB-using-python-matplotlib
+    element = W[:,i]
+    img = element.reshape(32,32)
+    plt.imshow(img, cmap='gray')
+    plt.title("W " + str(i) + "th with loss of " + str(loss))
+    
+    #Uncomment this to show the image
+    #plt.show()
+    
+    directory = os.path.abspath("output/" + title)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    plt.savefig(directory+"/img"+str(i))
+
+#Last simulation created
+def simulation_2():
     #The data is loaded
     data, labels = load_data(batch_name)
     
@@ -222,23 +242,46 @@ def simulationTEST():
         evaluated = evaluation(data, labels, generation)
         
         #Here the best evaluated individual should be inserted
-        #Reverse = True since we want the highest accuracy
-        sorted(evaluated, key=lambda tup: tup[1], reverse=True)
-        best_accuracy.append(evaluated[0][1])
-        
         #No reverse since we want the lowest loss
         sorted(evaluated, key=lambda tup: tup[0])
         best_loss.append(evaluated[0][0])
+        best_accuracy.append(evaluated[0][1])
         
-        generation = creativeGA(evaluated)
+        #A new generation is created
+        generation = creative_ga(evaluated)
+        
+    #The plot shows the population behavior        
+    fig, ax1 = plt.subplots()
+    
+    color = 'tab:blue'
+    ax1.set_xlabel('Generations')
+    ax1.set_ylabel('Loss', color=color)
+    ax1.plot(generation_iteration, best_loss, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    
+    ax2 = ax1.twinx()
+    
+    color = 'tab:red'
+    ax2.set_ylabel('Accuracy', color=color)
+    ax2.plot(generation_iteration, best_accuracy, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    fig.tight_layout()
+    plt.show()
+    
+    if batch_name == 'CIFAR':
+        #This line of code visualizes every photo that contains W
+        #The bias trick should be removed from the W in order to reshape it to 32x32
+        [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
+    
+    log("Simulation2.txt", "End of execution")
+    log("Simulation2.txt", "Last accuracy: " + str(evaluated[0][1]))
+    log("Simulation2.txt", "Last loss: " + str(evaluated[0][0]))
+    log("Simulation2.txt", "Generation count: " + str(generation_count))
+    log("Simulation2.txt", "Generation size: " + str(generation_size))
+    log("Simulation2.txt", "Mutation rate: " + str(mutation_rate))
 
-        
-    #This line of code visualizes every photo that contains W
-    #The bias trick should be removed from the W in order to reshape it to 32x32
-    [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
-    
-    return 0
-    
+#First simulation created
 def simulation():
     
     #The data is loaded
@@ -270,18 +313,11 @@ def simulation():
         #The generation is evaluated
         evaluated = evaluation(data, labels, generation)
         
-        '''
-        Las siguientes dos instrucciones hay que corregirlas 
-        para buscar el mejor de la generacion
-        '''
         #Here the best evaluated individual should be inserted
-        #Reverse = True since we want the highest accuracy
-        sorted(evaluated, key=lambda tup: tup[1], reverse=True)
-        best_accuracy.append(evaluated[0][1])
-        
         #No reverse since we want the lowest loss
         sorted(evaluated, key=lambda tup: tup[0])
         best_loss.append(evaluated[0][0])
+        best_accuracy.append(evaluated[0][1])
         
         #This line of code visualizes every photo that contains W
         #The bias trick should be removed from the W in order to reshape it to 32x32
@@ -298,41 +334,53 @@ def simulation():
         
         #The result is now the new generation for the following iteration
         generation = mutated
-        
-    #This line of code visualizes every photo that contains W
-    #The bias trick should be removed from the W in order to reshape it to 32x32
-    [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
-        
-    log(generation_iteration.__str__())
-    log(best_loss.__str__())
-    log(best_accuracy.__str__())
-
-def visualize_image(W,loss,title,i):
-    #Based on: https://www.quora.com/How-can-l-visualize-cifar-10-data-RGB-using-python-matplotlib
-    element = W[:,i]
-    img = element.reshape(32,32)
-    plt.imshow(img, cmap='gray')
-    plt.title("W " + str(i) + "th with loss of " + str(loss))
     
-    #Uncomment this to show the image
-    #plt.show()
-    directory = os.path.abspath("output/" + title)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    plt.savefig(directory+"/img"+str(i))
-
+    #The plot shows the population behavior        
+    fig, ax1 = plt.subplots()
+    
+    color = 'tab:blue'
+    ax1.set_xlabel('Generations')
+    ax1.set_ylabel('Loss', color=color)
+    ax1.plot(generation_iteration, best_loss, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    
+    ax2 = ax1.twinx()
+    
+    color = 'tab:red'
+    ax2.set_ylabel('Accuracy', color=color)
+    ax2.plot(generation_iteration, best_accuracy, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    fig.tight_layout()
+    plt.show()
+    
+    if batch_name == 'CIFAR':
+        #This line of code visualizes every photo that contains W
+        #The bias trick should be removed from the W in order to reshape it to 32x32
+        #This [0] first element, [2] the W, [:-1,:] without bias trick
+        [visualize_image(evaluated[0][2][:-1,:], evaluated[0][0], "Generation" + str(i), j) for j in range(class_count)]
+    
+    log("Simulation.txt", "End of execution")
+    log("Simulation.txt", "Last accuracy: " + str(evaluated[0][1]))
+    log("Simulation.txt", "Last loss: " + str(evaluated[0][0]))
+    log("Simulation.txt", "Generation count: " + str(generation_count))
+    log("Simulation.txt", "Generation size: " + str(generation_size))
+    log("Simulation.txt", "Mutation chance: " + str(mutation_chance))
+    log("Simulation.txt", "Pressure: " + str(pressure))
+    
+#For all night simulation xD
 def main():
     
     global generation_size
     global generation_count
     global pressure
-    global largoIndividuo
+    global mutation_rate
     global mutation_chance
     
     generation_size = 20
     generation_count = 50
     pressure = 3
-    largoIndividuo = 5
+    mutation_rate = 0.1
     mutation_chance = 0.3
     
     
@@ -355,8 +403,7 @@ def main():
                     for z in range(0, 30, 1):
                         log("time n: " + str(z))
                         simulation()
-                
-    
+
     '''
     #The plot shows the population behavior        
     fig, ax1 = plt.subplots()
@@ -377,6 +424,8 @@ def main():
     fig.tight_layout()
     plt.show()
     '''
-    
-simulationTEST()
+
+#main()
+#simulation()
+simulation_2()
 
